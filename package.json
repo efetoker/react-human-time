@@ -1,0 +1,57 @@
+{
+  "name": "npm-library-boilerplate",
+  "version": "1.0.0",
+  "description": "A professional boilerplate for creating NPM libraries.",
+  "author": "Efe Toker <efetoker@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/efetoker/npm-library-boilerplate.git"
+  },
+  "keywords": [
+    "boilerplate",
+    "template",
+    "typescript",
+    "npm",
+    "library"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint .",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "dev": "npm run build -- --watch",
+    "prepublishOnly": "npm test && npm run lint && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.31.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.14",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^16.3.0",
+    "jest": "^30.0.4",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  }
+}
