@@ -67,7 +67,7 @@ const App = () => {
 
 | Prop                  | Type                                      | Default      | Description                                                                                             |
 | --------------------- | ----------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- |
-| `timestamp`           | `number \| string \| Date`                | **Required** | The target date/time to display. Accepts a `Date` object, ISO string, or Unix timestamp (ms or s).      |
+| `timestamp`           | `number \| string \| Date`                | **Required** | The target date/time to display. Accepts a `Date` object, Unix timestamp (ms or s), or a string. Supported string formats include ISO 8601 (`YYYY-MM-DDTHH:mm:ss.sssZ`), `YYYY-MM-DD`, `YYYY/MM/DD`, and `MM/DD/YYYY`. |
 | `updateInterval`      | `number`                                  | `1000`       | The interval in milliseconds at which the component updates the time.                                   |
 | `prefix`              | `string`                                  | `''`         | A string to prepend to the time output.                                                                 |
 | `suffix`              | `string`                                  | `''`         | A string to append to the time output.                                                                  |
