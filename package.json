@@ -1,19 +1,22 @@
 {
-  "name": "npm-library-boilerplate",
-  "version": "1.0.0",
-  "description": "A professional boilerplate for creating NPM libraries.",
+  "name": "react-live-time",
+  "version": "0.0.1",
+  "description": "A lightweight and dependency-free React library for displaying human-readable, live-updating relative time without hooks.",
   "author": "Efe Toker <efetoker@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/efetoker/npm-library-boilerplate.git"
+    "url": "https://github.com/efetoker/react-live-time.git"
   },
   "keywords": [
-    "boilerplate",
-    "template",
-    "typescript",
-    "npm",
-    "library"
+    "react",
+    "time",
+    "date",
+    "format",
+    "relative",
+    "live",
+    "human",
+    "timeago"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -38,8 +41,11 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.31.0",
-    "@types/jest": "^30.0.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@types/jest": "^29.5.12",
     "@types/node": "^24.0.14",
+    "@types/react": "^18.3.3",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "eslint": "^9.31.0",
@@ -48,9 +54,12 @@
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-security": "^3.0.1",
     "globals": "^16.3.0",
-    "jest": "^30.0.4",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.6.2",
-    "ts-jest": "^29.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ts-jest": "^29.1.2",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   }
