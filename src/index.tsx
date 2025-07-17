@@ -54,31 +54,20 @@ type FormatRelativeTimeOptions = {
   absoluteFormatOptions?: Intl.DateTimeFormatOptions;
 };
 
-export const formatRelativeTime = (
-  dateInput: DateInput,
-  options: FormatRelativeTimeOptions = {}
-): string | null => {
+export type RelativeTimeParts = {
+  value: number;
+  unit: Intl.RelativeTimeFormatUnit;
+  diffInSeconds: number;
+};
+
+export const calculateRelativeTime = (dateInput: DateInput): RelativeTimeParts | null => {
   const date = parseDate(dateInput);
   if (!date) {
     return null;
   }
 
-  const {
-    locale = 'en',
-    style = 'long',
-    numeric = 'auto',
-    threshold,
-    absoluteFormatOptions,
-  } = options;
-
   const now = new Date();
   const diffInSeconds = (date.getTime() - now.getTime()) / 1000;
-
-  if (threshold && Math.abs(diffInSeconds) > threshold) {
-    return new Intl.DateTimeFormat(locale, absoluteFormatOptions).format(date);
-  }
-
-  const rtf = new Intl.RelativeTimeFormat(locale, { style, numeric });
 
   const units: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
     { unit: 'year', seconds: 31536000 },
@@ -93,14 +82,43 @@ export const formatRelativeTime = (
   for (const { unit, seconds } of units) {
     const value = Math.round(diffInSeconds / seconds);
     if (Math.abs(value) >= 1) {
-      return rtf.format(value, unit);
+      return { value, unit, diffInSeconds };
     }
   }
 
-  return rtf.format(0, 'second');
+  return { value: 0, unit: 'second', diffInSeconds };
+};
+
+export const formatRelativeTime = (
+  dateInput: DateInput,
+  options: FormatRelativeTimeOptions = {}
+): string | null => {
+  const {
+    locale = 'en',
+    style = 'long',
+    numeric = 'auto',
+    threshold,
+    absoluteFormatOptions,
+  } = options;
+
+  const parts = calculateRelativeTime(dateInput);
+  if (!parts) {
+    return null;
+  }
+
+  const { value, unit, diffInSeconds } = parts;
+
+  if (threshold && Math.abs(diffInSeconds) > threshold) {
+    const date = parseDate(dateInput);
+    return date ? new Intl.DateTimeFormat(locale, absoluteFormatOptions).format(date) : null;
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { style, numeric });
+  return rtf.format(value, unit);
 };
 
 type LiveRelativeTimeProps = {
+  children?: (timeString: string | null) => React.ReactNode;
   timestamp: DateInput;
   locale?: string;
   updateInterval?: number;
@@ -113,6 +131,39 @@ type LiveRelativeTimeProps = {
 
 type LiveRelativeTimeState = {
   timeString: string | null;
+};
+
+export const useLiveRelativeTime = (
+  timestamp: DateInput,
+  options: FormatRelativeTimeOptions = {}
+) => {
+  const [timeString, setTimeString] = React.useState(() =>
+    formatRelativeTime(timestamp, options)
+  );
+
+  React.useEffect(() => {
+    const getDynamicInterval = (diffInSeconds: number): number => {
+      const absDiff = Math.abs(diffInSeconds);
+      if (absDiff < 60) return 1000; // 1 second
+      if (absDiff < 3600) return 60 * 1000; // 1 minute
+      if (absDiff < 86400) return 3600 * 1000; // 1 hour
+      return -1; // Stop updating after 1 day
+    };
+
+    const parts = calculateRelativeTime(timestamp);
+    if (!parts) return;
+
+    const interval = getDynamicInterval(parts.diffInSeconds);
+
+    if (interval > 0) {
+      const timer = setInterval(() => {
+        setTimeString(formatRelativeTime(timestamp, options));
+      }, interval);
+      return () => clearInterval(timer);
+    }
+  }, [timestamp, options]);
+
+  return timeString;
 };
 
 export class LiveRelativeTime extends React.Component<
@@ -144,21 +195,35 @@ export class LiveRelativeTime extends React.Component<
     }
   }
 
-  private startTimer() {
-    this.stopTimer();
-    const { updateInterval } = this.props;
-    this.timer = setInterval(() => {
-      const timeString = formatRelativeTime(this.props.timestamp, this.props);
-      this.setState({ timeString });
-      if (timeString && this.props.onEnd && timeString.includes('ago')) {
-        const date = parseDate(this.props.timestamp);
-        if (date && new Date() > date) {
-          this.props.onEnd();
-        }
-      }
-    }, updateInterval || 1000);
+  private getDynamicInterval(diffInSeconds: number): number {
+    const absDiff = Math.abs(diffInSeconds);
+    if (absDiff < 60) return 1000; // 1 second
+    if (absDiff < 3600) return 60 * 1000; // 1 minute
+    if (absDiff < 86400) return 3600 * 1000; // 1 hour
+    return -1; // Stop updating after 1 day
   }
 
+  private startTimer() {
+    this.stopTimer();
+    const parts = calculateRelativeTime(this.props.timestamp);
+    if (!parts) return;
+
+    const interval = this.props.updateInterval ?? this.getDynamicInterval(parts.diffInSeconds);
+
+    if (interval > 0) {
+      this.timer = setInterval(() => {
+        const newParts = calculateRelativeTime(this.props.timestamp);
+        if (newParts) {
+          this.setState({ timeString: formatRelativeTime(this.props.timestamp, this.props) });
+          if (this.props.onEnd && newParts.diffInSeconds <= 0) {
+            this.props.onEnd();
+            this.stopTimer();
+          }
+        }
+      }, interval);
+    }
+  }
+  
   private stopTimer() {
     if (this.timer) {
       clearInterval(this.timer);
@@ -167,8 +232,12 @@ export class LiveRelativeTime extends React.Component<
   }
 
   render(): React.ReactNode {
-    const { prefix, suffix, className, style } = this.props;
+    const { children, prefix, suffix, className, style } = this.props;
     const { timeString } = this.state;
+
+    if (typeof children === 'function') {
+      return children(timeString);
+    }
 
     return (
       <span className={className} style={style}>

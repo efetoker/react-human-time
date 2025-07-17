@@ -1,7 +1,14 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, renderHook } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { parseDate, formatRelativeTime, LiveRelativeTime } from './index';
+import {
+  parseDate,
+  formatRelativeTime,
+  LiveRelativeTime,
+  useLiveRelativeTime,
+  calculateRelativeTime,
+  RelativeTimeParts,
+} from './index';
 
 describe('parseDate', () => {
   it('should return a Date object for a valid Date object', () => {
@@ -101,6 +108,68 @@ describe('formatRelativeTime', () => {
   });
 });
 
+describe('calculateRelativeTime', () => {
+  it('should return null for invalid date inputs', () => {
+    expect(calculateRelativeTime('invalid-date')).toBeNull();
+    expect(calculateRelativeTime('')).toBeNull();
+  });
+
+  it('should return correct parts for a date in the past', () => {
+    const now = new Date();
+    const pastDate = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+    const parts = calculateRelativeTime(pastDate) as RelativeTimeParts;
+
+    expect(parts.value).toBe(-5);
+    expect(parts.unit).toBe('minute');
+    expect(parts.diffInSeconds).toBeCloseTo(-300);
+  });
+
+  it('should return correct parts for a date in the future', () => {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + 2 * 3600 * 1000); // 2 hours from now
+    const parts = calculateRelativeTime(futureDate) as RelativeTimeParts;
+
+    expect(parts.value).toBe(2);
+    expect(parts.unit).toBe('hour');
+    expect(parts.diffInSeconds).toBeCloseTo(7200);
+  });
+
+  it('should return 0 seconds for the same date', () => {
+    const now = new Date();
+    const parts = calculateRelativeTime(now) as RelativeTimeParts;
+
+    expect(parts.value).toBe(0);
+    expect(parts.unit).toBe('second');
+    expect(parts.diffInSeconds).toBeCloseTo(0);
+  });
+});
+
+describe('useLiveRelativeTime', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('should return a time string and update it over time', () => {
+    const date = new Date();
+    date.setSeconds(date.getSeconds() - 10);
+
+    const { result, rerender } = renderHook(() => useLiveRelativeTime(date));
+
+    expect(result.current).toBe('10 seconds ago');
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+      rerender();
+    });
+
+    expect(result.current).toBe('12 seconds ago');
+  });
+});
+
 describe('LiveRelativeTime', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -154,7 +223,41 @@ describe('LiveRelativeTime', () => {
     rerender(<LiveRelativeTime timestamp={date2} />);
     expect(screen.getByText('20 seconds ago')).toBeInTheDocument();
   });
+
+  it('should use a dynamic update interval', () => {
+    const date = new Date();
+    date.setHours(date.getHours() - 2); // 2 hours ago
+    render(<LiveRelativeTime timestamp={date} />);
+    expect(screen.getByText('2 hours ago')).toBeInTheDocument();
+
+    // The interval should be 1 hour (3600 * 1000 ms)
+    act(() => {
+      jest.advanceTimersByTime(1000); // Advance by 1 second
+    });
+
+    // The text should NOT have updated
+    expect(screen.getByText('2 hours ago')).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(3600 * 1000); // Advance by 1 hour
+    });
+
+    // The text SHOULD have updated
+    expect(screen.getByText('3 hours ago')).toBeInTheDocument();
+  });
+
+  it('should render using a render prop', () => {
+    const date = new Date();
+    date.setSeconds(date.getSeconds() - 10);
+    render(
+      <LiveRelativeTime timestamp={date}>
+        {(timeString) => <p>{timeString}</p>}
+      </LiveRelativeTime>
+    );
+    expect(screen.getByText('10 seconds ago')).toBeInTheDocument();
+  });
 });
+
 
 
 
