@@ -36,6 +36,35 @@ describe('parseDate', () => {
     expect(parseDate(undefined)).toBeNull();
   });
 
+  it('should return a Date object for a valid YYYY-MM-DD string', () => {
+    const dateString = '2025-07-18';
+    const expectedDate = new Date('2025-07-18T00:00:00');
+    expect(parseDate(dateString)).toEqual(expectedDate);
+  });
+
+  it('should return a Date object for a valid YYYY/MM/DD string', () => {
+    const dateString = '2025/07/18';
+    const expectedDate = new Date('2025-07-18T00:00:00');
+    expect(parseDate(dateString)).toEqual(expectedDate);
+  });
+
+  it('should return a Date object for a valid MM/DD/YYYY string', () => {
+    const dateString = '07/18/2025';
+    const expectedDate = new Date('2025-07-18T00:00:00');
+    expect(parseDate(dateString)).toEqual(expectedDate);
+  });
+
+  it('should return a Date object for a full ISO string with timezone', () => {
+    const dateString = '2025-07-18T10:00:00+05:30';
+    const expectedDate = new Date(dateString);
+    expect(parseDate(dateString)).toEqual(expectedDate);
+  });
+
+  it('should return null for an invalid YYYY-MM-DD string', () => {
+    const dateString = '2025-99-99';
+    expect(parseDate(dateString)).toBeNull();
+  });
+
   it('should return null for other types', () => {
     expect(parseDate({} as any)).toBeNull();
   });
