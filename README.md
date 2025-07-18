@@ -2,7 +2,10 @@
 
 A lightweight and dependency-free React library for displaying human-readable, live-updating relative time.
 
-[![npm version](https://badge.fury.io/js/react-live-time.svg)](https://badge.fury.io/js/react-live-time)
+[![Build Status](https://github.com/efetoker/react-human-time/actions/workflows/ci.yml/badge.svg)](https://github.com/efetoker/react-human-time/actions/workflows/ci.yml)
+[![GitHub license](https://img.shields.io/github/license/efetoker/react-human-time)](https://github.com/efetoker/react-human-time/blob/main/LICENSE)
+[![Code Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](./coverage/lcov-report/index.html)
+[![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
 
 ## Features
 
