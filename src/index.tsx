@@ -133,6 +133,14 @@ type LiveRelativeTimeState = {
   timeString: string | null;
 };
 
+const _getDynamicInterval = (diffInSeconds: number): number => {
+  const absDiff = Math.abs(diffInSeconds);
+  if (absDiff < 60) return 1000; // 1 second
+  if (absDiff < 3600) return 60 * 1000; // 1 minute
+  if (absDiff < 86400) return 3600 * 1000; // 1 hour
+  return -1; // Stop updating after 1 day
+};
+
 export const useLiveRelativeTime = (
   timestamp: DateInput,
   options: FormatRelativeTimeOptions = {}
@@ -142,18 +150,10 @@ export const useLiveRelativeTime = (
   );
 
   React.useEffect(() => {
-    const getDynamicInterval = (diffInSeconds: number): number => {
-      const absDiff = Math.abs(diffInSeconds);
-      if (absDiff < 60) return 1000; // 1 second
-      if (absDiff < 3600) return 60 * 1000; // 1 minute
-      if (absDiff < 86400) return 3600 * 1000; // 1 hour
-      return -1; // Stop updating after 1 day
-    };
-
     const parts = calculateRelativeTime(timestamp);
     if (!parts) return;
 
-    const interval = getDynamicInterval(parts.diffInSeconds);
+    const interval = _getDynamicInterval(parts.diffInSeconds);
 
     if (interval > 0) {
       const timer = setInterval(() => {
@@ -195,20 +195,12 @@ export class LiveRelativeTime extends React.Component<
     }
   }
 
-  private getDynamicInterval(diffInSeconds: number): number {
-    const absDiff = Math.abs(diffInSeconds);
-    if (absDiff < 60) return 1000; // 1 second
-    if (absDiff < 3600) return 60 * 1000; // 1 minute
-    if (absDiff < 86400) return 3600 * 1000; // 1 hour
-    return -1; // Stop updating after 1 day
-  }
-
   private startTimer() {
     this.stopTimer();
     const parts = calculateRelativeTime(this.props.timestamp);
     if (!parts) return;
 
-    const interval = this.props.updateInterval ?? this.getDynamicInterval(parts.diffInSeconds);
+    const interval = this.props.updateInterval ?? _getDynamicInterval(parts.diffInSeconds);
 
     if (interval > 0) {
       this.timer = setInterval(() => {
