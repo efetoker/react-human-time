@@ -213,6 +213,8 @@ export class LiveRelativeTime extends React.Component<
           }
         }
       }, interval);
+    } else if (this.props.onEnd && parts.diffInSeconds <= 0) {
+      this.props.onEnd();
     }
   }
   
