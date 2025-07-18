@@ -1,8 +1,9 @@
 import React from 'react';
 
 type DateInput = number | string | Date;
+type _ParsedDate = Date | null;
 
-export const parseDate = (dateInput: DateInput | null | undefined): Date | null => {
+export const parseDate = (dateInput: DateInput | null | undefined): _ParsedDate => {
   if (dateInput === null || dateInput === undefined) {
     return null;
   }
@@ -60,8 +61,7 @@ export type RelativeTimeParts = {
   diffInSeconds: number;
 };
 
-export const calculateRelativeTime = (dateInput: DateInput): RelativeTimeParts | null => {
-  const date = parseDate(dateInput);
+const _calculateRelativeTime = (date: _ParsedDate): RelativeTimeParts | null => {
   if (!date) {
     return null;
   }
@@ -89,8 +89,13 @@ export const calculateRelativeTime = (dateInput: DateInput): RelativeTimeParts |
   return { value: 0, unit: 'second', diffInSeconds };
 };
 
-export const formatRelativeTime = (
-  dateInput: DateInput,
+export const calculateRelativeTime = (dateInput: DateInput): RelativeTimeParts | null => {
+  const date = parseDate(dateInput);
+  return _calculateRelativeTime(date);
+};
+
+const _formatRelativeTime = (
+  date: _ParsedDate,
   options: FormatRelativeTimeOptions = {}
 ): string | null => {
   const {
@@ -101,7 +106,7 @@ export const formatRelativeTime = (
     absoluteFormatOptions,
   } = options;
 
-  const parts = calculateRelativeTime(dateInput);
+  const parts = _calculateRelativeTime(date);
   if (!parts) {
     return null;
   }
@@ -109,12 +114,19 @@ export const formatRelativeTime = (
   const { value, unit, diffInSeconds } = parts;
 
   if (threshold && Math.abs(diffInSeconds) > threshold) {
-    const date = parseDate(dateInput);
     return date ? new Intl.DateTimeFormat(locale, absoluteFormatOptions).format(date) : null;
   }
 
   const rtf = new Intl.RelativeTimeFormat(locale, { style, numeric });
   return rtf.format(value, unit);
+};
+
+export const formatRelativeTime = (
+  dateInput: DateInput,
+  options: FormatRelativeTimeOptions = {}
+): string | null => {
+  const date = parseDate(dateInput);
+  return _formatRelativeTime(date, options);
 };
 
 type LiveRelativeTimeProps = {
@@ -150,14 +162,15 @@ export const useLiveRelativeTime = (
   );
 
   React.useEffect(() => {
-    const parts = calculateRelativeTime(timestamp);
+    const date = parseDate(timestamp);
+    const parts = _calculateRelativeTime(date);
     if (!parts) return;
 
     const interval = _getDynamicInterval(parts.diffInSeconds);
 
     if (interval > 0) {
       const timer = setInterval(() => {
-        setTimeString(formatRelativeTime(timestamp, options));
+        setTimeString(_formatRelativeTime(date, options));
       }, interval);
       return () => clearInterval(timer);
     }
@@ -171,11 +184,13 @@ export class LiveRelativeTime extends React.Component<
   LiveRelativeTimeState
 > {
   private timer: NodeJS.Timeout | null = null;
+  private parsedDate: _ParsedDate = null;
 
   constructor(props: LiveRelativeTimeProps) {
     super(props);
+    this.parsedDate = parseDate(props.timestamp);
     this.state = {
-      timeString: formatRelativeTime(props.timestamp, props),
+      timeString: _formatRelativeTime(this.parsedDate, props),
     };
   }
 
@@ -189,24 +204,26 @@ export class LiveRelativeTime extends React.Component<
 
   componentDidUpdate(prevProps: LiveRelativeTimeProps) {
     if (prevProps.timestamp !== this.props.timestamp) {
+      this.parsedDate = parseDate(this.props.timestamp);
       this.setState({
-        timeString: formatRelativeTime(this.props.timestamp, this.props),
+        timeString: _formatRelativeTime(this.parsedDate, this.props),
       });
+      this.startTimer(); // Restart timer with new date
     }
   }
 
   private startTimer() {
     this.stopTimer();
-    const parts = calculateRelativeTime(this.props.timestamp);
+    const parts = _calculateRelativeTime(this.parsedDate);
     if (!parts) return;
 
     const interval = this.props.updateInterval ?? _getDynamicInterval(parts.diffInSeconds);
 
     if (interval > 0) {
       this.timer = setInterval(() => {
-        const newParts = calculateRelativeTime(this.props.timestamp);
+        const newParts = _calculateRelativeTime(this.parsedDate);
         if (newParts) {
-          this.setState({ timeString: formatRelativeTime(this.props.timestamp, this.props) });
+          this.setState({ timeString: _formatRelativeTime(this.parsedDate, this.props) });
           if (this.props.onEnd && newParts.diffInSeconds <= 0) {
             this.props.onEnd();
             this.stopTimer();
